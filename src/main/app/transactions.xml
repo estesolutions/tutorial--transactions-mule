@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <db:mysql-config name="MySQL_Configuration" host="127.0.0.1" port="3306" user="mulesoft" password="mulesoft" database="business" doc:name="MySQL Configuration">
+        <db:connection-properties>
+            <db:property key="useSSL" value="false"/>
+        </db:connection-properties>
+    </db:mysql-config>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="OrderFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/orders" doc:name="HTTP"/>
+        <json:json-to-object-transformer doc:name="JSON to Object" returnClass="java.util.HashMap"/>
+        <set-variable variableName="order" value="#[payload]" doc:name="Variable"/>
+        <logger message="Order Received" level="INFO" doc:name="Logger"/>
+        <transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+            <db:insert config-ref="MySQL_Configuration" transactionalAction="ALWAYS_JOIN" doc:name="Customers Database">
+                <db:parameterized-query><![CDATA[INSERT INTO customers (name, email) VALUES (#[order.name],#[order.email])]]></db:parameterized-query>
+            </db:insert>
+            <logger message="Customer Created" level="INFO" doc:name="Logger"/>
+            <db:insert config-ref="MySQL_Configuration" transactionalAction="ALWAYS_JOIN" doc:name="Orders Database">
+                <db:parameterized-query><![CDATA[INSERT INTO orders (product, quantity) VALUES (#[order.product],#[order.quantity])]]></db:parameterized-query>
+            </db:insert>
+        </transactional>
+        <logger message="Order Created" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

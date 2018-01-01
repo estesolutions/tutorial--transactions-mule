@@ -1,4 +1,4 @@
-## Code used in YouTube tutorial video https://www.youtube.com/watch?v=l3dhN7KnXbg.
+## Code used in YouTube tutorial video https://youtu.be/l3dhN7KnXbg
 
 ### Description: 
 Do you ever need to rollback actions when an error occurs?
